@@ -14,6 +14,12 @@ inline int min(int a, int b){
   return b;
 }
 
+char toChar(flag f) {
+  if(f == Maybe) return '?';
+  if(f == Yes) return 'O';
+  return 'X';
+}
+
 void print() {
   int i, j;
   for(i = 1; i <= rn; i++) {
@@ -273,12 +279,6 @@ void solve() {
     for(i = 1; i <= cn; i++)
       changed |= solve_col(i);
   }while(changed);
-}
-
-char toChar(flag f) {
-  if(f == Maybe) return '?';
-  if(f == Yes) return 'O';
-  return 'X';
 }
 
 int main() {
