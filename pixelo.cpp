@@ -14,7 +14,16 @@ inline int min(int a, int b){
   return b;
 }
 
-void print();
+void print() {
+  int i, j;
+  for(i = 1; i <= rn; i++) {
+    for(j = 1; j <= cn; j++) {
+      printf("%c", toChar(board[i][j]));
+    }
+    printf("\n");
+  }
+  DEBUG(printf("\n");)
+}
 
 void init() {
   int i, j;
@@ -34,12 +43,6 @@ void saveConfig(int n) {
 int findFirstInRow(int row, int from, flag f) {
   for(int i = from; i <= cn; i++)
     if(board[row][i] == f) return i;
-  return -1;
-}
-
-int findFirstInCol(int col, int from, flag f) {
-  for(int i = from; i <= rn; i++)
-    if(board[i][col] == f) return i;
   return -1;
 }
 
@@ -67,38 +70,9 @@ void findConfigsInRowAux(int row, int col, int hint) {
     findConfigsInRowAux(row, firstNo + 1, hint);
 }
 
-void findConfigsInColAux(int col, int row, int hint) {
-  if(hint > colhint[col][0]) {
-    saveConfig(colhint[col][0]);
-    return;
-  }
-  if(row > rn) {
-    return;
-  }
-  int len = colhint[col][hint];
-  int firstNo = findFirstInCol(col, row, No);
-  if(firstNo == -1) firstNo = rn+1;
-  int maximumFirstPos = firstNo - len;
-  if(maximumFirstPos < row) findConfigsInColAux(col, firstNo+1, hint);
-  int firstYes = findFirstInCol(col, row, Yes);
-  if(firstYes != -1) maximumFirstPos = min(maximumFirstPos, firstYes);
-  DEBUG(printf("col %d row %d maxfirst %d len %d firstno %d\n", col, row, maximumFirstPos, len, firstNo);)
-  for(int i = row; i <= maximumFirstPos; i++) {
-    configs[0][hint] = i;
-    findConfigsInColAux(col, i + len + 1, hint + 1);
-  }
-  if(firstYes == -1)
-    findConfigsInColAux(col, firstNo + 1, hint);
-}
-
 void findConfigsInRow(int row) {
   configN = 0;
   findConfigsInRowAux(row, 1, 1); 
-}
-
-void findConfigsInCol(int col) {
-  configN = 0;
-  findConfigsInColAux(col, 1, 1);
 }
 
 // returns yes if changed something
@@ -130,42 +104,6 @@ bool tryFitRow(int row) {
       if(board[row][represent + len] == Maybe) {
         board[row][represent + len] = No;
         DEBUG(printf("row put X after consecutive\n");) DEBUG(print();)
-        changed = true;
-      }
-    }
-  }
-  return changed;
-}
-
-// returns yes if changed something
-bool tryFitCol(int col) {
-  findConfigsInCol(col);
-  if(configN == 0) return false; // this shouldn't happen...
-  int h, c, represent;
-  bool changed = false, unique;
-  for(h = 1; h <= colhint[col][0]; h++) {
-    represent = configs[1][h];
-    unique = true;
-    for(c = 2; c <= configN; c++) {
-      if(configs[c][h] != represent) {
-        unique = false;
-        break;
-      }
-    }
-
-    if(unique) {
-      int i, len = colhint[col][h];
-      for(i = 0; i < len; i++) {
-        if(board[represent + i][col] == Maybe) { 
-          board[represent + i][col] = Yes;
-          DEBUG(printf("col fill consecutive O\n");) DEBUG(print();)
-          changed = true;
-        }
-      }
-      
-      if(board[represent + len][col] == Maybe) {
-        board[represent + len][col] = No;
-        DEBUG(printf("col put X after consecutive\n");) DEBUG(print();) 
         changed = true;
       }
     }
@@ -211,6 +149,77 @@ bool solve_row(int at) {
   }
 
   return tryFitRow(at);
+}
+
+int findFirstInCol(int col, int from, flag f) {
+  for(int i = from; i <= rn; i++)
+    if(board[i][col] == f) return i;
+  return -1;
+}
+
+void findConfigsInColAux(int col, int row, int hint) {
+  if(hint > colhint[col][0]) {
+    saveConfig(colhint[col][0]);
+    return;
+  }
+  if(row > rn) {
+    return;
+  }
+  int len = colhint[col][hint];
+  int firstNo = findFirstInCol(col, row, No);
+  if(firstNo == -1) firstNo = rn+1;
+  int maximumFirstPos = firstNo - len;
+  if(maximumFirstPos < row) findConfigsInColAux(col, firstNo+1, hint);
+  int firstYes = findFirstInCol(col, row, Yes);
+  if(firstYes != -1) maximumFirstPos = min(maximumFirstPos, firstYes);
+  DEBUG(printf("col %d row %d maxfirst %d len %d firstno %d\n", col, row, maximumFirstPos, len, firstNo);)
+  for(int i = row; i <= maximumFirstPos; i++) {
+    configs[0][hint] = i;
+    findConfigsInColAux(col, i + len + 1, hint + 1);
+  }
+  if(firstYes == -1)
+    findConfigsInColAux(col, firstNo + 1, hint);
+}
+
+void findConfigsInCol(int col) {
+  configN = 0;
+  findConfigsInColAux(col, 1, 1);
+}
+
+// returns yes if changed something
+bool tryFitCol(int col) {
+  findConfigsInCol(col);
+  if(configN == 0) return false; // this shouldn't happen...
+  int h, c, represent;
+  bool changed = false, unique;
+  for(h = 1; h <= colhint[col][0]; h++) {
+    represent = configs[1][h];
+    unique = true;
+    for(c = 2; c <= configN; c++) {
+      if(configs[c][h] != represent) {
+        unique = false;
+        break;
+      }
+    }
+
+    if(unique) {
+      int i, len = colhint[col][h];
+      for(i = 0; i < len; i++) {
+        if(board[represent + i][col] == Maybe) { 
+          board[represent + i][col] = Yes;
+          DEBUG(printf("col fill consecutive O\n");) DEBUG(print();)
+          changed = true;
+        }
+      }
+      
+      if(board[represent + len][col] == Maybe) {
+        board[represent + len][col] = No;
+        DEBUG(printf("col put X after consecutive\n");) DEBUG(print();) 
+        changed = true;
+      }
+    }
+  }
+  return changed;
 }
 
 bool solve_col(int at) {
@@ -270,17 +279,6 @@ char toChar(flag f) {
   if(f == Maybe) return '?';
   if(f == Yes) return 'O';
   return 'X';
-}
-
-void print() {
-  int i, j;
-  for(i = 1; i <= rn; i++) {
-    for(j = 1; j <= cn; j++) {
-      printf("%c", toChar(board[i][j]));
-    }
-    printf("\n");
-  }
-  DEBUG(printf("\n");)
 }
 
 int main() {
